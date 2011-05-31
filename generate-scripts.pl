@@ -4,6 +4,7 @@
 use strict;
 use warnings;
 use FindBin;
+use Perl::Tidy qw(perltidy);
 use IO::File ();
 use File::Basename qw(basename);
 
@@ -239,7 +240,24 @@ print "Testing Perl $], Moose $Moose::VERSION, Mouse $Mouse::VERSION, Moo $Moo::
         "Object::Tiny::XS"      => \&otxs,
 =cut
 
+my $dir = '.build';
+if( -d $dir ){
+  die " ! $dir exists.  Please remove it to regenerate scripts.";
+}
+
+my $b0 = basename($0);
+-e "./$b0"
+  or die "confused... run me from directory (./$b0)";
+
+mkdir($dir);
 foreach my $i ( 0 .. $#scripts ){
   my ($name, $code) = @{ $scripts[$i] };
-  print $code;
+  (my $fname = $name) =~ s/\W+/_/g;
+  # use perltidy for consistent output (in case we commit these files at some point)
+  perltidy(
+    source      => \$code,
+    destination => IO::File->new( sprintf "> %s/%02d-%s.pl", $dir, $i, $fname ),
+    perltidyrc  => './.perltidyrc',
+    argv        => '',
+  );
 }
